@@ -1,0 +1,11 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "gmodcraft:mirror",
+      "generator": {
+        "type": "gmodcraft:hull",
+        "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
+      }
+    }
+  }
+}

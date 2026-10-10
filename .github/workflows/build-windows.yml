@@ -1,0 +1,89 @@
+# Builds the win64 binary modules (gmcl_gmodcraft_win64.dll, gmsv_gmodcraft_win64.dll) with VS 2022:
+# x64, Release, static CRT (/MT, from garrysmod_common). Checks the outputs the way module/build.sh checks the
+# Linux ones (x64 PE, exports exactly gmod13_open/gmod13_close, no VC++ runtime or Source library imports) and
+# uploads them as a workflow artifact. Attaching them to a release is a separate step (not here).
+name: build-windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module-win64:
+    runs-on: windows-latest
+    env:
+      PREMAKE_VERSION: 5.0.0-beta7
+      PREMAKE_SHA256: 8baec7b265fd43050f006ef47000457fa93b6fafbb1ead7e333e862a467c2e95
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Fetch premake (pinned, sha256-checked)
+        shell: pwsh
+        run: |
+          $url = "https://github.com/premake/premake-core/releases/download/v$env:PREMAKE_VERSION/premake-$env:PREMAKE_VERSION-windows.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "premake.zip"
+          $dir = Join-Path $env:RUNNER_TEMP "premake"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
+          if ($hash -ne $env:PREMAKE_SHA256) { throw "premake zip sha256 $hash != $env:PREMAKE_SHA256" }
+          Expand-Archive -Path $zip -DestinationPath $dir
+          Add-Content -Path $env:GITHUB_PATH -Value $dir
+
+      - name: Generate the VS 2022 solution
+        shell: pwsh
+        working-directory: module
+        run: premake5 --file=premake5.lua vs2022
+
+      # Puts msbuild and dumpbin (x64 tools) on PATH.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build (Release x64)
+        shell: pwsh
+        working-directory: module/projects/windows/vs2022
+        run: |
+          msbuild gmodcraft.sln /p:Configuration=Release /p:Platform=x64 /m /nologo /v:minimal
+          if ($LASTEXITCODE -ne 0) { throw "msbuild failed ($LASTEXITCODE)" }
+
+      - name: Check the modules
+        shell: pwsh
+        run: |
+          $src = "module/projects/windows/vs2022/x86_64/Release"
+          $out = "module/build"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $fail = $false
+          foreach ($realm in "gmsv", "gmcl") {
+            $name = "${realm}_gmodcraft_win64.dll"
+            Copy-Item "$src/$name" "$out/$name"
+            $f = "$out/$name"
+            $headers = dumpbin /nologo /headers $f | Out-String
+            if ($headers -notmatch "8664 machine \(x64\)") { Write-Host "${name}: not an x64 PE"; $fail = $true }
+            $exports = dumpbin /nologo /exports $f |
+              Select-String -Pattern '^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]{8}\s+(\S+)' |
+              ForEach-Object { $_.Matches[0].Groups[1].Value } | Sort-Object
+            $exportList = ($exports -join " ")
+            if ($exportList -ne "gmod13_close gmod13_open") { Write-Host "${name}: unexpected exports: $exportList"; $fail = $true }
+            $deps = dumpbin /nologo /dependents $f |
+              Select-String -Pattern '^\s+(\S+\.dll)\s*$' |
+              ForEach-Object { $_.Matches[0].Groups[1].Value }
+            $bad = $deps | Where-Object { $_ -match '^(vcruntime|msvcp|ucrtbase|api-ms-win-crt|tier0|vstdlib)' }
+            if ($bad) { Write-Host "${name}: unexpected imports (static CRT, no Source libs expected): $($bad -join ' ')"; $fail = $true }
+            Write-Host "${name}: exports $exportList; imports $($deps -join ' ')"
+          }
+          if ($fail) { throw "module checks FAILED" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gmodcraft-module-win64
+          path: |
+            module/build/gmcl_gmodcraft_win64.dll
+            module/build/gmsv_gmodcraft_win64.dll
+          if-no-files-found: error

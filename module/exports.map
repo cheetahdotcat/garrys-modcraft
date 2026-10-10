@@ -1,0 +1,9 @@
+/* Only the GMod module entry points are exported; everything else (incl. the statically
+   linked old-ABI libstdc++) stays local so it can never interpose on the engine's copy. */
+{
+	global:
+		gmod13_open;
+		gmod13_close;
+	local:
+		*;
+};

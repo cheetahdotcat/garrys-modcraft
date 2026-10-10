@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "gmodcraft:block/redstone_bridge" }
+  }
+}

@@ -1,0 +1,4 @@
+accessWidener v2 official
+# W2: gmodcraft:underground subclasses vanilla noise generation (RandomState is only built from
+# the noise settings for an instanceof NoiseBasedChunkGenerator).
+extendable class net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator
