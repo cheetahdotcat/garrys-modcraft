@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "gmodcraft",
+  "version": "${version}",
+  "name": "Garry's Modcraft",
+  "description": "Play Garry's Mod as a Minecraft player: Minecraft physics, inventory and viewmodels inside GMod. Fork of SkyCraft.",
+  "authors": ["hawktuahs", "chasmlol"],
+  "contact": {
+    "sources": "https://github.com/hawktuahs/SkycraftFork (upstream SkyCraft)"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.gmodcraft.GmodCraft"],
+    "client": ["dev.gmodcraft.client.GmodCraftClient"]
+  },
+  "mixins": [
+    "gmodcraft.mixins.json",
+    { "config": "gmodcraft.client.mixins.json", "environment": "client" }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
