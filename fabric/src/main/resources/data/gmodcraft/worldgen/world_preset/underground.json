@@ -1,0 +1,12 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "gmodcraft:mirror",
+      "generator": {
+        "type": "gmodcraft:underground",
+        "biome_source": { "type": "minecraft:multi_noise", "preset": "minecraft:overworld" },
+        "settings": "minecraft:overworld"
+      }
+    }
+  }
+}

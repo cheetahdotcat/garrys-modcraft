@@ -1,0 +1,22 @@
+# gradle / loom
+fabric/.gradle/
+fabric/build/
+fabric/run/
+fabric/out/
+fabric/logs/
+fabric/run-guest*/
+# native module
+module/build/
+module/projects/
+# local toolchains
+.tools/
+# ide
+.idea/
+*.iml
+.vscode/
+# release packaging
+dist/
+__pycache__/
+*.pyc
+# claude-pp worktrees
+.claude/
