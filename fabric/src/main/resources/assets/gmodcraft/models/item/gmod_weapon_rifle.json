@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "gmodcraft:item/gmod_weapon_rifle"
+  }
+}
